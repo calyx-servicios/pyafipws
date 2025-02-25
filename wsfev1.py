@@ -134,7 +134,8 @@ class WSFEv1(BaseWS):
             cbt_desde=0, cbt_hasta=0, imp_total=0.00, imp_tot_conc=0.00, imp_neto=0.00,
             imp_iva=0.00, imp_trib=0.00, imp_op_ex=0.00, fecha_cbte="", fecha_venc_pago=None,
             fecha_serv_desde=None, fecha_serv_hasta=None, #--
-            moneda_id="PES", moneda_ctz="1.0000", caea=None, fecha_hs_gen=None, **kwargs
+            moneda_id="PES", moneda_ctz="1.0000", caea=None, fecha_hs_gen=None, 
+            condicion_iva_receptor:int=0, **kwargs
             ):
 
         "Creo un objeto factura (interna)"
@@ -154,6 +155,7 @@ class WSFEv1(BaseWS):
                 'iva': [],
                 'opcionales': [],
                 'compradores': [],
+                'con_iva_receptor': condicion_iva_receptor
                 }
         if fecha_serv_desde:
             fact['fecha_serv_desde'] = fecha_serv_desde
@@ -216,6 +218,16 @@ class WSFEv1(BaseWS):
                 'porcentaje': porcentaje}
         self.factura['compradores'].append(comp)
         return True
+    
+    def AgregarCancelaMismaMonedaExtranjera(self, cancela_mon_ext:bool):
+        "Agrega si el comprobante se cancela en misma moneda extranjera o no"
+        if not isinstance(cancela_mon_ext, bool):
+            raise RuntimeError("El tipo de dato enviado no es valido.")
+        if cancela_mon_ext: 
+            self.factura["can_mis_mon_ext"] = "S"
+        else: 
+            self.factura["can_mis_mon_ext"] = "N"
+        return True
 
     def ObtenerCampoFactura(self, *campos):
         "Obtener el valor devuelto de AFIP para un campo de factura"
@@ -263,6 +275,9 @@ class WSFEv1(BaseWS):
                     'FchVtoPago': f.get('fecha_venc_pago'),
                     'MonId': f['moneda_id'],
                     'MonCotiz': f['moneda_ctz'],
+                    # Campos añadidos a partir de RG 5.616/2024
+                    'CanMisMonExt':f.get('can_mis_mon_ext'),
+                    'CondicionIVAReceptorId':f['con_iva_receptor'],
                     'PeriodoAsoc': {
                         'FchDesde': f['periodo_cbtes_asoc'].get('fecha_desde'),
                         'FchHasta': f['periodo_cbtes_asoc'].get('fecha_hasta'),
